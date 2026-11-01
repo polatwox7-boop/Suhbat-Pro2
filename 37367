@@ -1,0 +1,493 @@
+cd /mnt/user-data/outputs && cp index.html /home/claude/index_before_v3.html && cat > /home/claude/patch3.py << 'PYEOF'
+import re
+s=open('/mnt/user-data/outputs/index.html',encoding='utf-8').read()
+def rep(a,b):
+    global s
+    assert s.count(a)==1,("MISSING",a[:80])
+    s=s.replace(a,b)
+def seg(start,end,new):
+    global s
+    a=s.index(start); b=s.index(end,a)
+    s=s[:a]+new+s[b:]
+
+# ---------- CSS ----------
+rep(':focus-visible{',r""".strip{display:flex;gap:14px;padding:12px 14px;overflow-x:auto;background:var(--sf);border-bottom:1px solid var(--ln);scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.chip{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:64px;cursor:pointer;animation:fadeUp .4s both}
+.chip .av{width:56px;height:56px;box-shadow:0 4px 12px rgba(0,0,0,.18);transition:transform .15s}.chip:active .av{transform:scale(.92)}
+.chip span{font-size:12px;color:var(--mu);max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b.typing{display:flex;gap:4px;padding:13px 16px;align-self:flex-start}.typing i{width:7px;height:7px;border-radius:50%;background:var(--mu);animation:dot 1.2s infinite}.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+#rst{width:78px;height:78px;background:#ef4444;border:5px solid #ffffff99}#rst.recing{animation:ring 1s infinite}
+#rpv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);background:#000}
+.card h3{font-size:15px;margin-top:2px}
+:focus-visible{""")
+
+# ---------- HTML ----------
+rep('<div class="list" id="clist"></div>','<div class="strip" id="strip"></div>\n  <div class="list" id="clist"></div>')
+rep('<button class="ib" id="pic" aria-label="Rasm">📷</button><input type="file" id="file" accept="image/*" hidden>','<button class="ib" id="pic" aria-label="Rasm yoki video">📷</button><button class="ib" id="vrec" aria-label="Video xabar">🎥</button><input type="file" id="file" accept="image/*,video/*" hidden>')
+rep('<div class="call" id="call">',r"""<div class="call" id="rec" style="z-index:25"><video id="rpv" autoplay playsinline muted></video><div class="ci"><div id="rt" style="font-size:36px;font-weight:700">0:00</div><div id="rh">Video xabar: 6 soniyagacha. Qizil tugmani bosing.</div></div><div class="cb"><button id="rcan" aria-label="Bekor qilish"></button><button class="red" id="rst" aria-label="Yozish"></button></div></div>
+
+<div class="call" id="call">""")
+
+# ---------- top-level JS ----------
+rep('function avc(n){',r"""IC.brain=S('<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>');
+IC.spark=S('<path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/>');
+IC.tool=S('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"/>');
+IC.vrec=S('<circle cx="12" cy="12" r="3"/><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/>');
+IC.recdot=S('<circle cx="12" cy="12" r="6" fill="#fff" stroke="none"/>');
+function loadLocal(){var d=null;try{d=JSON.parse(localStorage.getItem("suhbat_local")||"null")}catch(e){}d=d||{};d.notes=d.notes||[];d.rem=d.rem||[];d.bots=d.bots||[];d.hist=d.hist||{};d.mute=d.mute||{};d.fa=d.fa||null;d.gem=d.gem||{key:"",model:"gemini-2.5-flash"};return d}
+var L=loadLocal();
+function saveLocal(){try{localStorage.setItem("suhbat_local",JSON.stringify(L))}catch(e){}}
+var AC=null;
+function ac(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume()}catch(e){}return AC}
+document.addEventListener("pointerdown",function(){ac()},{once:true});
+function tone(f,t0,d,v){var c=ac();if(!c)return;var o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.value=f;o.connect(g);g.connect(c.destination);var t=c.currentTime+t0;g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(v||.25,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+d);o.start(t);o.stop(t+d+.05)}
+function vib(p){try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+function chime(){tone(880,0,.25);tone(1318,.12,.4);vib([80,60,80])}
+var ringT=null;
+function ringStop(){if(ringT){clearInterval(ringT);ringT=null}}
+function ringStart(){ringStop();var go=function(){tone(740,0,.3,.35);tone(988,.35,.3,.35);tone(740,.9,.3,.35);tone(988,1.25,.3,.35);vib([400,200,400])};go();ringT=setInterval(go,2600)}
+function lastTxt(d){return d.text||(d.vid?"Video":"Rasm")}
+function headAv(cls,inner,photo){var a=$("cav");a.className="av "+cls;a.style.backgroundImage=photo?"url('"+photo+"')":"";a.style.backgroundSize="cover";a.style.backgroundPosition="center";if(photo)a.innerHTML="";else a.innerHTML=inner}
+function bub(m,mine,room,id){
+  var med=(m.img?'<img src="'+esc(m.img)+'" alt="">':"")+(m.vid?'<video controls playsinline preload="metadata" src="'+esc(m.vid)+'"></video>':"");
+  return '<div class="b'+(mine?" me":"")+'"'+(id?' data-mid="'+esc(id)+'"':"")+'>'+(room&&!mine?'<div class="sn">'+(m.bot?IC.bot+" ":"")+esc(m.fromName||"")+'</div>':"")+med+(m.text?linkify(m.text):"")+'<small>'+hm(m.t)+'</small></div>';
+}
+var BOTS={xotira:{name:"Xotira",ic:"brain",c:"c5"},ai:{name:"AI yordamchi",ic:"spark",c:"c2"},father:{name:"BotUstasi",ic:"tool",c:"c1"}};
+function botList(){var a=Object.keys(BOTS).map(function(k){return{id:k,name:BOTS[k].name,ic:BOTS[k].ic,c:BOTS[k].c}});L.bots.forEach(function(b){a.push({id:"u_"+b.id,name:b.name,ic:b.ai?"spark":"bot",c:"c3"})});return a}
+function botInfo(id){return botList().filter(function(b){return b.id===id})[0]}
+function hist(id){return L.hist[id]=L.hist[id]||[]}
+function gemCall(contents,persona){
+  if(!L.gem.key)return Promise.resolve("AI uchun bepul kalit kerak:\n1) aistudio.google.com/apikey ga kiring\n2) Create API key ni bosing\n3) Kalitni AI yordamchi chatiga /kalit AIza... deb yuboring");
+  var body={contents:contents,systemInstruction:{parts:[{text:persona||"Sen foydali yordamchisan. O‘zbek tilida qisqa va aniq javob ber."}]}};
+  return fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(L.gem.model)+":generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":L.gem.key},body:JSON.stringify(body)})
+    .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j.error&&j.error.message)||r.status);return j})})
+    .then(function(j){var p=j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts;var t=p&&p.map(function(x){return x.text||""}).join("");return t||"Javob bo‘sh keldi."})
+    .catch(function(e){return"AI xatosi: "+String(e.message).slice(0,160)});
+}
+function gemOnce(persona,text){return gemCall([{role:"user",parts:[{text:text}]}],persona)}
+function gemChat(id,persona){
+  var h=hist(id).filter(function(m){return m.text}).slice(-12);
+  return gemCall(h.map(function(m){return{role:m.f==="me"?"user":"model",parts:[{text:m.text}]}}),persona);
+}
+function xotira(t){
+  var m;
+  if(/^\/(yordam|help|start)/i.test(t))return"Men Xotiraman.\n• Oddiy matn yozing: eslab qolaman\n• /royxat: yozuvlar ro‘yxati\n• /ochir 2: 2-yozuvni o‘chiradi\n• /eslat 15:30 dori ichish\n• /eslat 20 daq choy qo‘yish\n• /eslatmalar: rejalangan eslatmalar\nEslatma ilova ochiq turganda jiringlaydi.";
+  if(/^\/royxat/i.test(t))return L.notes.length?L.notes.map(function(n,i){return(i+1)+". "+n.text}).join("\n"):"Yozuvlar yo‘q.";
+  if(m=t.match(/^\/ochir\s+(\d+)/i)){var i=+m[1]-1;if(!L.notes[i])return"Bunday raqam yo‘q.";var d=L.notes.splice(i,1)[0];saveLocal();return"O‘chirildi: "+d.text}
+  if(m=t.match(/^\/eslat\s+(\d{1,2}):(\d{2})\s+([\s\S]+)/i)){var d2=new Date();d2.setHours(+m[1],+m[2],0,0);if(d2<=Date.now())d2.setDate(d2.getDate()+1);L.rem.push({at:d2.getTime(),text:m[3].trim(),done:false});saveLocal();return"Eslataman: "+hm(d2.getTime())+" — "+m[3].trim()}
+  if(m=t.match(/^\/eslat\s+(\d+)\s*(daq|d|soat|s)?\s+([\s\S]+)/i)){var mins=+m[1]*(/^(soat|s)$/i.test(m[2]||"")?60:1);L.rem.push({at:Date.now()+mins*60000,text:m[3].trim(),done:false});saveLocal();return mins+" daqiqadan keyin eslataman: "+m[3].trim()}
+  if(/^\/eslatmalar/i.test(t)){var a=L.rem.filter(function(r){return!r.done});return a.length?a.map(function(r){return hm(r.at)+" — "+r.text}).join("\n"):"Rejalangan eslatma yo‘q."}
+  if(t.charAt(0)==="/")return"Tushunmadim. /yordam ni yuboring.";
+  L.notes.push({text:t,t:Date.now()});saveLocal();return"Saqlandi ("+L.notes.length+"-yozuv).";
+}
+function father(t){
+  var m,f=L.fa;
+  if(/^\/bekor/i.test(t)){L.fa=null;saveLocal();return"Bekor qilindi."}
+  if(/^\/(start|yordam|help)/i.test(t)&&!f)return"Men BotUstasiman.\n/yangibot: yangi bot yaratish\n/botlarim: botlaringiz\n/ochirbot Nom: botni o‘chirish\nBot yaratgach, u suhbatlar ro‘yxati tepasida paydo bo‘ladi. Guruh sozlamalaridan guruhga qo‘shishingiz mumkin.";
+  if(/^\/botlarim/i.test(t))return L.bots.length?L.bots.map(function(b,i){return(i+1)+". "+b.name+(b.ai?" (AI)":" ("+b.cmds.length+" buyruq)")}).join("\n"):"Hali bot yo‘q. /yangibot ni yuboring.";
+  if(m=t.match(/^\/ochirbot\s+(.+)/i)){var n0=L.bots.length;L.bots=L.bots.filter(function(b){return b.name.toLowerCase()!==m[1].trim().toLowerCase()});saveLocal();return L.bots.length<n0?"Bot o‘chirildi.":"Bunday bot topilmadi."}
+  if(/^\/yangibot/i.test(t)){L.fa={step:"name"};saveLocal();return"Yangi bot yaratamiz. Botga qanday nom berasiz?"}
+  if(!f)return"Boshlash uchun /yangibot ni yuboring.";
+  if(f.step==="name"){
+    if(t.length<2||t.length>20)return"Nom 2–20 belgi bo‘lsin.";
+    if(L.bots.some(function(b){return b.name.toLowerCase()===t.toLowerCase()}))return"Bu nom band. Boshqa nom yozing.";
+    f.name=t;f.step="type";saveLocal();
+    return"Qaysi turdagi bot?\n1 — Buyruqli bot (siz belgilagan buyruq va javoblar)\n2 — AI bot (siz yozgan xarakter bilan gaplashadi)\nRaqamni yozing.";
+  }
+  if(f.step==="type"){
+    if(t==="1"){f.cmds=[];f.step="cmds";saveLocal();return"Buyruq va javobni shunday yozing:\n/salom = Assalomu alaykum!\nBir nechta yuborishingiz mumkin. Tugagach /tayyor deb yozing."}
+    if(t==="2"){f.step="prompt";saveLocal();return"Botning xarakterini yozing. Masalan:\nSen ingliz tili o‘qituvchisisan, oddiy so‘zlar bilan tushuntir."}
+    return"1 yoki 2 ni yozing.";
+  }
+  if(f.step==="cmds"){
+    if(/^\/tayyor/i.test(t)){
+      if(!f.cmds.length)return"Hech bo‘lmasa bitta buyruq qo‘shing.";
+      L.bots.push({id:Date.now().toString(36),name:f.name,ai:false,cmds:f.cmds,prompt:""});L.fa=null;saveLocal();
+      return"Bot tayyor: "+f.name+". U suhbatlar ro‘yxati tepasida turibdi.";
+    }
+    var mm=t.match(/^(\/\S+)\s*=\s*([\s\S]+)/);if(!mm)return"Format: /buyruq = javob";
+    f.cmds.push({c:mm[1].toLowerCase(),r:mm[2].trim()});saveLocal();return"Qo‘shildi: "+mm[1]+" ("+f.cmds.length+"). Yana yozing yoki /tayyor.";
+  }
+  if(f.step==="prompt"){
+    L.bots.push({id:Date.now().toString(36),name:f.name,ai:true,cmds:[],prompt:t.slice(0,600)});L.fa=null;saveLocal();
+    return"AI bot tayyor: "+f.name+". Unga yozing. AI ishlashi uchun AI yordamchi chatida /kalit orqali bepul kalit kiriting.";
+  }
+  return"";
+}
+function ubot(b,t,id){
+  if(b.ai){if(/^\/(start|yordam)/i.test(t))return Promise.resolve(b.name+" — AI bot. Menga yozing.");return gemChat(id,b.prompt)}
+  var low=t.toLowerCase().split(/\s+/)[0],hit=null;b.cmds.forEach(function(c){if(c.c===low)hit=c.r});
+  return Promise.resolve(hit||"Buyruqlar: "+b.cmds.map(function(c){return c.c}).join(" "));
+}
+function avc(n){""")
+rep('chang:"end"};','chang:"end",vrec:"vrec",rst:"recdot",rcan:"back"};')
+
+# ---------- init vars / hooks ----------
+rep('var roomsUnsub=null,roomsCache={},chatList=[],roomList=[],botUnsubs={},botStart=Date.now();','var roomsUnsub=null,roomsCache={},chatList=[],roomList=[],botUnsubs={},botStart=Date.now();\n  var seenT={},myLast={},typing=false,remT=null,rec=null;')
+rep('scr("home");watchChats();watchRooms();','scr("home");watchChats();watchRooms();startRem();')
+rep('endCall(false);hideIncoming();cur=null;','endCall(false);hideIncoming();cur=null;clearInterval(remT);remT=null;seenT={};myLast={};')
+rep('$("inc").classList.add("on")}','$("inc").classList.add("on");ringStart()}')
+rep('function hideIncoming(){incoming=null;','function hideIncoming(){ringStop();incoming=null;')
+
+# ---------- Segment A ----------
+segA=r"""  function otherOf(c){return c.members.filter(function(m){return m!==me.uid})[0]}
+  function isAdm(r){return!!r&&(r.owner===me.uid||(r.admins||[]).indexOf(me.uid)>-1)}
+  function canWrite(r){return r.type==="channel"?isAdm(r):(r.writeMode==="admins"?isAdm(r):true)}
+  function notifyNew(id,name,text){if(L.mute[id])return;chime();toast(name+": "+String(text||"Yangi xabar").slice(0,60))}
+  function watchChats(){
+    if(chatsUnsub)chatsUnsub();
+    var first=true;
+    chatsUnsub=db.collection("chats").where("members","array-contains",me.uid).onSnapshot(function(s){
+      s.docChanges().forEach(function(ch){
+        if(ch.type==="removed")return;
+        var x=ch.doc.data(),id=ch.doc.id,t=x.lastT||0,isNew=seenT[id]===undefined;
+        if(((!isNew&&t>seenT[id])||(isNew&&!first))&&myLast[id]!==t&&t){
+          var nm=(x.names&&x.names[otherOf(x)])||"Xabar";
+          if(cur&&cur.cid===id)tone(660,0,.12,.15);else notifyNew(id,nm,x.last);
+        }
+        seenT[id]=t;
+      });
+      first=false;
+      var list=[];
+      s.forEach(function(d){var x=d.data();x.id=d.id;chatsCache[d.id]=x;list.push(x);watchCall(d.id)});
+      chatList=list;renderHome();
+    },function(e){$("clist").innerHTML='<div class="empty">Xato: '+esc(e.code||e.message)+'<br>Firestore qoidalarini tekshiring.</div>'});
+  }
+  function rowOpen(e){var r=e.target.closest(".row");if(!r)return;if(r.dataset.r)openRoom(r.dataset.r);else openChat(r.dataset.u,r.dataset.n)}
+  function avStyle(r){return r.photo?' style="background-image:url(\''+esc(r.photo)+'\');background-size:cover;background-position:center"':""}
+  function renderHome(){
+    var items=[];
+    chatList.forEach(function(c){var o=otherOf(c),n=(c.names&&c.names[o])||"Foydalanuvchi";items.push({t:c.lastT||0,h:'<div class="row" tabindex="0" data-u="'+esc(o)+'" data-n="'+esc(n)+'"><div class="av '+avc(n)+'">'+esc(n[0].toUpperCase())+'</div><div class="grow"><div class="nm">'+esc(n)+'</div><div class="sub">'+esc(c.last||"")+'</div></div></div>'})});
+    roomList.forEach(function(r){items.push({t:r.lastT||0,h:'<div class="row" tabindex="0" data-r="'+esc(r.id)+'"><div class="av '+(r.type==="channel"?"c6":"c7")+'"'+avStyle(r)+'>'+(r.photo?"":(r.type==="channel"?IC.chan:IC.group))+'</div><div class="grow"><div class="nm">'+esc(r.name)+'</div><div class="sub">'+esc(r.last||(r.type==="channel"?"Kanal":"Guruh"))+'</div></div></div>'})});
+    items.sort(function(a,b){return b.t-a.t});
+    $("strip").innerHTML=botList().map(function(b){return'<div class="chip" data-b="'+esc(b.id)+'"><div class="av '+b.c+'">'+IC[b.ic]+'</div><span>'+esc(b.name)+'</span></div>'}).join("");
+    $("clist").innerHTML=items.length?items.map(function(i){return i.h}).join(""):'<div class="empty">Hali suhbat yo‘q. ＋ ni bosib suhbat, guruh yoki kanal oching. Tepadagi botlarga ham yozib ko‘ring.</div>';
+  }
+  $("strip").addEventListener("click",function(e){var c=e.target.closest(".chip");if(c)openBot(c.dataset.b)});
+  function watchRooms(){
+    if(roomsUnsub)roomsUnsub();
+    var first=true;
+    roomsUnsub=db.collection("rooms").where("members","array-contains",me.uid).onSnapshot(function(s){
+      s.docChanges().forEach(function(ch){
+        if(ch.type==="removed"){delete roomsCache[ch.doc.id];return}
+        var x=ch.doc.data(),id=ch.doc.id,t=x.lastT||0,isNew=seenT[id]===undefined;
+        if(((!isNew&&t>seenT[id])||(isNew&&!first))&&myLast[id]!==t&&t){
+          if(cur&&cur.rid===id)tone(660,0,.12,.15);else notifyNew(id,x.name,x.last);
+        }
+        seenT[id]=t;
+      });
+      first=false;
+      roomList=[];
+      s.forEach(function(d){var x=d.data();x.id=d.id;roomsCache[d.id]=x;roomList.push(x);if(x.owner===me.uid)runBot(d.id)});
+      renderHome();
+      if(cur&&cur.room&&roomsCache[cur.rid])roomUi("room",roomsCache[cur.rid]);
+    },function(){});
+  }
+  function runBot(rid){
+    if(botUnsubs[rid])return;
+    var ref=db.collection("rooms").doc(rid).collection("messages");
+    botUnsubs[rid]=ref.where("t",">",botStart).orderBy("t").onSnapshot(function(s){
+      s.docChanges().forEach(function(ch){
+        if(ch.type!=="added")return;
+        var x=ch.doc.data(),r=roomsCache[rid];
+        if(!r||x.bot||!r.bots||!r.bots.length||typeof x.text!=="string")return;
+        var txt=x.text.trim(),low=txt.toLowerCase(),first=low.split(/\s+/)[0];
+        function say(i,name,text){ref.doc("bot_"+ch.doc.id+"_"+i).set({from:me.uid,fromName:name,bot:true,text:text,t:Date.now()}).catch(function(){})}
+        var hit=false;
+        r.bots.forEach(function(b,i){
+          if(b.cmd){if(first===b.cmd){hit=true;say(i,"Bot",b.reply)}}
+          else if(b.ai){var tag="@"+String(b.name).toLowerCase();if(low.indexOf(tag)===0){hit=true;gemOnce(b.prompt||"",txt.slice(tag.length).trim()||"Salom").then(function(a){say(i,b.name,a)})}}
+          else(b.cmds||[]).forEach(function(c){if(first===c.c){hit=true;say(i,b.name,c.r)}});
+        });
+        if(!hit&&first==="/vaqt")say(90,"Bot","Hozir "+hm());
+        if(!hit&&first==="/yordam")say(91,"Bot","Botlar: "+r.bots.map(function(b){return b.cmd||("@"+b.name+" yoki "+((b.cmds||[]).map(function(c){return c.c}).join(" ")))}).join(" · "));
+      });
+    },function(){});
+  }
+  function roomUi(mode,r){
+    var room=mode==="room",bot=mode==="bot";
+    $("ca").style.display=$("cv").style.display=(room||bot)?"none":"";
+    $("ri").style.display=room?"":"none";
+    var nomedia=bot||(room&&r&&r.media===false);
+    $("pic").style.display=$("vrec").style.display=nomedia?"none":"";
+    var ro=!!(room&&r&&!canWrite(r));
+    $("bar").style.display=ro?"none":"";$("chnote").style.display=ro?"":"none";
+    $("chnote").textContent=r&&r.type==="channel"?"Faqat kanal adminlari yozadi":"Bu guruhda faqat adminlar yozadi";
+  }
+  function openRoom(id){var r=roomsCache[id];if(r)openRoomData(id,r)}
+  function openRoomData(id,r){
+    cur={room:true,rid:id,name:r.name,type:r.type,owner:r.owner};
+    $("cnm").textContent=r.name;
+    headAv(r.type==="channel"?"c6":"c7",r.type==="channel"?IC.chan:IC.group,r.photo);
+    $("msgs").innerHTML="";roomUi("room",r);
+    if(msgsUnsub)msgsUnsub();
+    msgsUnsub=db.collection("rooms").doc(id).collection("messages").orderBy("t").limitToLast(100).onSnapshot(function(s){
+      var h="";s.forEach(function(d){var m=d.data();h+=bub(m,m.from===me.uid&&!m.bot,true,d.id)});
+      $("msgs").innerHTML=h;$("msgs").scrollTop=1e7;
+    },function(){toast("Xabarlarni o‘qib bo‘lmadi")});
+    scr("chat");
+  }
+  $("msgs").addEventListener("contextmenu",function(e){
+    var b=e.target.closest(".b[data-mid]");if(!b||!cur||!cur.room)return;
+    var r=roomsCache[cur.rid];if(!isAdm(r))return;
+    e.preventDefault();
+    if(confirm("Xabarni o‘chirasizmi?"))db.collection("rooms").doc(cur.rid).collection("messages").doc(b.dataset.mid).delete().catch(function(){toast("O‘chirib bo‘lmadi")});
+  });
+  function sendRoom(data){
+    var c=cur,ref=db.collection("rooms").doc(c.rid),t=Date.now();myLast[c.rid]=t;
+    return ref.collection("messages").add(Object.assign({from:me.uid,fromName:me.displayName||me.email,t:t},data))
+      .then(function(){return ref.update({last:lastTxt(data),lastT:t})})
+      .catch(function(){toast("Yuborib bo‘lmadi (ruxsat yo‘q bo‘lishi mumkin)")});
+  }
+  /* --- botlar --- */
+  function renderBot(){
+    if(!cur||!cur.bot)return;
+    var h=hist(cur.bot).map(function(m){return'<div class="b'+(m.f==="me"?" me":"")+'">'+linkify(m.text)+'<small>'+hm(m.t)+'</small></div>'}).join("");
+    if(typing)h+='<div class="b typing"><i></i><i></i><i></i></div>';
+    $("msgs").innerHTML=h;$("msgs").scrollTop=1e7;
+  }
+  function botSay(id,text){hist(id).push({f:"bot",text:text,t:Date.now()});saveLocal();if(cur&&cur.bot===id)renderBot();renderHome()}
+  function openBot(id){
+    var bi=botInfo(id);if(!bi)return;
+    cur={bot:id,name:bi.name};
+    $("cnm").textContent=bi.name;headAv(bi.c,IC[bi.ic],"");
+    roomUi("bot");$("msgs").innerHTML="";scr("chat");
+    if(!hist(id).length){
+      var w={xotira:"Salom! Men Xotiraman. Yozganingizni eslab qolaman va eslatma qo‘yaman. /yordam ni yuboring.",ai:"Salom! Men AI yordamchiman. Savolingizni yozing. Birinchi marta /yordam ni yuboring.",father:"Salom! Men BotUstasiman. Yangi bot yaratish uchun /yangibot ni yuboring."}[id]||("Salom! Men "+bi.name+"man. /yordam");
+      botSay(id,w);
+    }else renderBot();
+  }
+  function sendBot(t){
+    var id=cur.bot;hist(id).push({f:"me",text:t,t:Date.now()});saveLocal();
+    typing=true;renderBot();
+    var p,m;
+    if(id==="xotira")p=Promise.resolve(xotira(t));
+    else if(id==="father")p=Promise.resolve(father(t));
+    else if(id==="ai"){
+      if(m=t.match(/^\/kalit\s+(\S+)/i)){L.gem.key=m[1];var hh=hist("ai");hh[hh.length-1].text="/kalit ••••••";saveLocal();p=Promise.resolve("Kalit saqlandi. Endi savol bering.")}
+      else if(m=t.match(/^\/model\s+(\S+)/i)){L.gem.model=m[1];saveLocal();p=Promise.resolve("Model: "+m[1])}
+      else if(/^\/tozala/i.test(t)){L.hist.ai=[];saveLocal();p=Promise.resolve("Suhbat tozalandi.")}
+      else if(/^\/(start|yordam)/i.test(t))p=Promise.resolve("Men AI yordamchiman. Savolingizni yozing.\nBir martalik sozlash: aistudio.google.com/apikey dan bepul kalit oling va /kalit AIza... deb yuboring.\n/model NOM: modelni almashtirish\n/tozala: suhbatni tozalash");
+      else p=gemChat("ai","");
+    }else{
+      var ub=L.bots.filter(function(b){return"u_"+b.id===id})[0];
+      p=ub?ubot(ub,t,id):Promise.resolve("");
+    }
+    setTimeout(function(){
+      p.then(function(rep){
+        typing=false;if(rep)hist(id).push({f:"bot",text:rep,t:Date.now()});saveLocal();
+        if(cur&&cur.bot===id)renderBot();renderHome();
+      });
+    },650);
+  }
+  function startRem(){if(remT)clearInterval(remT);remT=setInterval(checkRem,10000)}
+  function checkRem(){
+    var now=Date.now(),hit=false;
+    L.rem.forEach(function(r){if(!r.done&&r.at<=now){r.done=true;hit=true;hist("xotira").push({f:"bot",text:"Eslatma: "+r.text,t:now});chime();toast("Eslatma: "+r.text)}});
+    if(hit){saveLocal();if(cur&&cur.bot==="xotira")renderBot();renderHome()}
+  }
+"""
+seg('  function otherOf(c){','  function sheet(h){',segA)
+
+# ---------- Segment C: info + ov2 handler ----------
+segC=r"""  function upd(rid,obj,local){
+    return db.collection("rooms").doc(rid).update(obj).then(function(){Object.assign(roomsCache[rid]||{},local||{});if(cur&&cur.rid===rid)info()})
+      .catch(function(){var e=$("ierr");if(e)e.textContent="Saqlab bo‘lmadi."});
+  }
+  function info(){
+    var r=roomsCache[cur.rid];if(!r)return;var own=r.owner===me.uid,adm=isAdm(r),names=r.names||{};
+    var h=(r.photo?'<img src="'+esc(r.photo)+'" alt="" style="width:84px;height:84px;border-radius:50%;object-fit:cover;align-self:center">':"")+'<h2>'+esc(r.name)+'</h2>';
+    h+='<div class="note">'+(r.type==="channel"?"Kanal":"Guruh")+' · '+r.members.length+' a‘zo'+(r.desc?'<br>'+esc(r.desc):"")+'</div>';
+    h+='<div class="note">Qo‘shilish kodi (do‘stlarga yuboring):</div><div class="code">'+esc(r.id)+'</div>';
+    h+='<button class="btnl" data-a="mt">'+IC.info+(L.mute[r.id]?"Bildirishnomani yoqish":"Bildirishnomani o‘chirish")+'</button>';
+    if(adm&&!own)h+='<div class="note">Siz adminsiz: xabarni bosib ushlab o‘chirishingiz mumkin.</div>';
+    if(own){
+      h+='<div class="hr"></div><h3>Sozlamalar</h3>';
+      h+='<div class="r"><button class="cn" data-a="ph">Rasm qo‘yish</button><input type="file" id="rph" accept="image/*" hidden></div>';
+      h+='<div class="r"><input type="text" id="rdesc" placeholder="Tavsif" maxlength="140" value="'+esc(r.desc||"")+'"><button class="go" data-a="sd">Saqlash</button></div>';
+      if(r.type==="group")h+='<div class="note">Kim yozadi?</div><div class="r"><button class="'+(r.writeMode==="admins"?"cn":"go")+'" data-a="wm" data-v="all">Hamma</button><button class="'+(r.writeMode==="admins"?"go":"cn")+'" data-a="wm" data-v="admins">Faqat adminlar</button></div>';
+      h+='<button class="btnl" data-a="md">'+IC.img+(r.media===false?"Rasm va video: o‘chiq (yoqish)":"Rasm va video: yoqiq (o‘chirish)")+'</button>';
+      h+='<div class="hr"></div><h3>A‘zolar</h3>';
+      r.members.forEach(function(u){
+        var isA=(r.admins||[]).indexOf(u)>-1;
+        if(u===r.owner)h+='<div class="note">'+esc(names[u]||"Egasi")+' · ega</div>';
+        else h+='<div class="r"><div class="grow note">'+esc(names[u]||"A‘zo")+(isA?" · admin":"")+'</div><button class="cn" data-a="adm" data-u="'+esc(u)+'">'+(isA?"Adminlikni olish":"Admin qilish")+'</button><button class="cn" data-a="kick" data-u="'+esc(u)+'">✕</button></div>';
+      });
+      h+='<div class="note">A‘zo qo‘shish (Gmail):</div><div class="r"><input type="email" id="mem" placeholder="Gmail"><button class="go" data-a="addm">Qo‘shish</button></div>';
+      h+='<div class="hr"></div><h3>Botlar</h3><div class="note">Bot faqat sizning ilovangiz ochiq turganda javob beradi.</div>';
+      (r.bots||[]).forEach(function(b,i){
+        var lbl=b.cmd?(b.cmd+" → "+b.reply):(b.ai?(b.name+" (AI): @"+b.name+" savol"):(b.name+": "+(b.cmds||[]).map(function(c){return c.c}).join(" ")));
+        h+='<div class="r"><div class="grow note">'+esc(lbl)+'</div><button class="cn" data-a="delb" data-i="'+i+'">✕</button></div>';
+      });
+      h+='<button class="btnl" data-a="abot" data-k="ai">'+IC.spark+'AI botni qo‘shish (@AI savol)</button>';
+      L.bots.forEach(function(b,i){h+='<button class="btnl" data-a="abot" data-k="u'+i+'">'+IC.bot+esc(b.name)+' botini qo‘shish</button>'});
+      h+='<div class="note">Oddiy buyruq qo‘shish (tayyor: /vaqt, /yordam):</div><input type="text" id="bc" placeholder="/buyruq" maxlength="20"><input type="text" id="br" placeholder="Bot javobi" maxlength="300"><button class="go" data-a="addb">Buyruq qo‘shish</button>';
+      h+='<div class="hr"></div><button class="btnl" data-a="delr" style="color:var(--rd)">'+IC.end+'Guruhni o‘chirish</button>';
+    }else h+='<button class="btnl" data-a="leave" style="color:var(--rd)">'+IC.end+'Chiqish</button>';
+    h+='<div class="err" id="ierr"></div><button class="cn" data-a="x" style="padding:12px;border-radius:14px">Yopish</button>';
+    sheet(h);
+  }
+  $("ri").onclick=info;
+  $("ov2").addEventListener("change",function(e){
+    if(e.target.id!=="rph")return;
+    var f=e.target.files[0];if(!f||!cur||!cur.room)return;
+    var fr=new FileReader();
+    fr.onload=function(){var im=new Image();im.onload=function(){
+      var s0=160/Math.min(im.width,im.height),c=document.createElement("canvas");c.width=c.height=160;
+      var w=im.width*s0,hh=im.height*s0;c.getContext("2d").drawImage(im,(160-w)/2,(160-hh)/2,w,hh);
+      var u=c.toDataURL("image/jpeg",.7);upd(cur.rid,{photo:u},{photo:u}).then(function(){headAv(cur.type==="channel"?"c6":"c7","",u)});
+    };im.src=fr.result};
+    fr.readAsDataURL(f);
+  });
+  $("ov2").addEventListener("click",function(e){
+    if(e.target===this){closeSheet();return}
+    var b=e.target.closest("[data-a]");if(!b)return;var a=b.dataset.a;
+    var myName=me.displayName||me.email,r=cur&&cur.room?roomsCache[cur.rid]:null;
+    if(a==="x")closeSheet();
+    else if(a==="chat")openNew();
+    else if(a==="group"||a==="channel"){
+      sheet('<h2>'+(a==="channel"?"Kanal":"Guruh")+' yaratish</h2><input type="text" id="rn" placeholder="Nomi" maxlength="40"><div class="err" id="rerr"></div><div class="r"><button class="cn" data-a="x">Bekor qilish</button><button class="go" data-a="mk" data-t="'+a+'">Yaratish</button></div>');$("rn").focus();
+    }
+    else if(a==="join")sheet('<h2>Kod bilan qo‘shilish</h2><input type="text" id="jc" placeholder="Guruh yoki kanal kodi"><div class="err" id="jerr"></div><div class="r"><button class="cn" data-a="x">Bekor qilish</button><button class="go" data-a="jn">Qo‘shilish</button></div>');
+    else if(a==="mk"){
+      var nm=$("rn").value.trim();if(nm.length<2){$("rerr").textContent="Nomini yozing.";return}
+      var ref=db.collection("rooms").doc(),nms={};nms[me.uid]=myName;var t0=Date.now();
+      var data={type:b.dataset.t,name:nm,owner:me.uid,members:[me.uid],admins:[],names:nms,desc:"",photo:"",writeMode:"all",media:true,bots:[],last:"",lastT:t0};
+      myLast[ref.id]=t0;seenT[ref.id]=t0;
+      ref.set(data).then(function(){closeSheet();data.id=ref.id;roomsCache[ref.id]=data;openRoomData(ref.id,data)}).catch(function(){$("rerr").textContent="Yaratib bo‘lmadi."});
+    }
+    else if(a==="jn"){
+      var code=$("jc").value.trim();if(!code)return;
+      db.collection("rooms").doc(code).get().then(function(d){
+        if(!d.exists){$("jerr").textContent="Bunday kod topilmadi.";return}
+        var x=d.data();x.id=d.id;myLast[d.id]=x.lastT||0;seenT[d.id]=x.lastT||0;
+        if(x.members.indexOf(me.uid)>-1){closeSheet();roomsCache[d.id]=x;openRoomData(d.id,x);return}
+        var up={members:firebase.firestore.FieldValue.arrayUnion(me.uid)};up["names."+me.uid]=myName;
+        return d.ref.update(up).then(function(){closeSheet();x.members.push(me.uid);x.names=x.names||{};x.names[me.uid]=myName;roomsCache[d.id]=x;openRoomData(d.id,x)});
+      }).catch(function(){$("jerr").textContent="Qo‘shilib bo‘lmadi."});
+    }
+    else if(!r)return;
+    else if(a==="mt"){L.mute[r.id]=!L.mute[r.id];saveLocal();info()}
+    else if(a==="ph")$("rph").click();
+    else if(a==="sd"){var dv=$("rdesc").value.trim();upd(r.id,{desc:dv},{desc:dv})}
+    else if(a==="wm")upd(r.id,{writeMode:b.dataset.v},{writeMode:b.dataset.v});
+    else if(a==="md"){var nv=r.media===false;upd(r.id,{media:nv},{media:nv})}
+    else if(a==="adm"){var u1=b.dataset.u,is1=(r.admins||[]).indexOf(u1)>-1,na=(r.admins||[]).filter(function(x){return x!==u1});if(!is1)na.push(u1);upd(r.id,{admins:na},{admins:na})}
+    else if(a==="kick"){var u2=b.dataset.u;if(!confirm("A‘zoni chiqarasizmi?"))return;var nm2=r.members.filter(function(x){return x!==u2}),na2=(r.admins||[]).filter(function(x){return x!==u2});upd(r.id,{members:nm2,admins:na2},{members:nm2,admins:na2})}
+    else if(a==="addm"){
+      var em=$("mem").value.trim().toLowerCase();if(!em)return;
+      db.collection("users").where("emailLower","==",em).limit(1).get().then(function(q){
+        if(q.empty){$("ierr").textContent="Bu pochta egasi hali ilovaga kirmagan.";return}
+        var uid=q.docs[0].id,un=q.docs[0].data().name||em,up={members:firebase.firestore.FieldValue.arrayUnion(uid)};up["names."+uid]=un;
+        return db.collection("rooms").doc(r.id).update(up).then(function(){r.members=(r.members||[]).concat([uid]);r.names=r.names||{};r.names[uid]=un;toast("Qo‘shildi");info()});
+      }).catch(function(){$("ierr").textContent="Qo‘shib bo‘lmadi."});
+    }
+    else if(a==="abot"){
+      var k=b.dataset.k,nb=(r.bots||[]).slice(),nbot;
+      if(k==="ai")nbot={name:"AI",ai:true,prompt:"Sen guruhdagi AI yordamchisan. O‘zbek tilida qisqa javob ber.",cmds:[]};
+      else{var ub=L.bots[+k.slice(1)];nbot={name:ub.name,ai:!!ub.ai,prompt:ub.prompt||"",cmds:ub.cmds||[]}}
+      if(nb.some(function(x){return x.name===nbot.name}))return toast("Bu bot allaqachon qo‘shilgan");
+      nb.push(nbot);upd(r.id,{bots:nb},{bots:nb});
+    }
+    else if(a==="addb"){
+      var c=$("bc").value.trim().toLowerCase(),t=$("br").value.trim();
+      if(c.charAt(0)!=="/"||c.length<2||!t){$("ierr").textContent="Buyruq / bilan boshlansin va javob yozilsin.";return}
+      var bots=(r.bots||[]).concat([{cmd:c.split(/\s+/)[0],reply:t}]).slice(0,20);upd(r.id,{bots:bots},{bots:bots});
+    }
+    else if(a==="delb"){var nb3=(r.bots||[]).filter(function(_,i){return i!==Number(b.dataset.i)});upd(r.id,{bots:nb3},{bots:nb3})}
+    else if(a==="delr"){if(!confirm("Guruh butunlay o‘chiriladi. Davom etasizmi?"))return;db.collection("rooms").doc(r.id).delete().then(function(){closeSheet();if(msgsUnsub)msgsUnsub();msgsUnsub=null;cur=null;scr("home")}).catch(function(){$("ierr").textContent="O‘chirib bo‘lmadi."})}
+    else if(a==="leave"){if(!confirm("Guruhdan chiqasizmi?"))return;var nm4=r.members.filter(function(x){return x!==me.uid});db.collection("rooms").doc(r.id).update({members:nm4}).then(function(){closeSheet();if(msgsUnsub)msgsUnsub();msgsUnsub=null;cur=null;scr("home")}).catch(function(){$("ierr").textContent="Chiqib bo‘lmadi."})}
+  });
+"""
+seg('  function info(){','  $("clist").addEventListener("click",rowOpen);',segC)
+
+# ---------- Segment D: chat ----------
+segD=r"""  function openChat(uid,name){
+    var cid=[me.uid,uid].sort().join("_");
+    cur={cid:cid,uid:uid,name:name};roomUi("chat");
+    $("cnm").textContent=name;headAv(avc(name),esc(name[0].toUpperCase()),"");$("msgs").innerHTML="";
+    if(msgsUnsub)msgsUnsub();
+    msgsUnsub=db.collection("chats").doc(cid).collection("messages").orderBy("t").limitToLast(100).onSnapshot(function(s){
+      var h="";s.forEach(function(d){var m=d.data();h+=bub(m,m.from===me.uid,false,"")});
+      $("msgs").innerHTML=h;$("msgs").scrollTop=1e7;
+    },function(){toast("Xabarlarni o‘qib bo‘lmadi")});
+    scr("chat");
+  }
+  $("bk").onclick=function(){if(msgsUnsub)msgsUnsub();msgsUnsub=null;cur=null;typing=false;scr("home");renderHome()};
+  function sendMsg(data){
+    if(!cur||cur.bot)return Promise.resolve();
+    if(cur.room)return sendRoom(data);
+    var c=cur,names={},t=Date.now();names[me.uid]=me.displayName||me.email;names[c.uid]=c.name;myLast[c.cid]=t;
+    var ref=db.collection("chats").doc(c.cid);
+    return ref.set({members:[me.uid,c.uid],names:names,last:lastTxt(data),lastT:t},{merge:true})
+      .then(function(){return ref.collection("messages").add(Object.assign({from:me.uid,t:t},data))})
+      .catch(function(){toast("Yuborib bo‘lmadi")});
+  }
+  function sendText(){var t=$("inp").value.trim();if(!t||!cur)return;$("inp").value="";if(cur.bot){sendBot(t);return}sendMsg({text:t.slice(0,2000)})}
+  $("snd").onclick=sendText;
+  $("inp").addEventListener("keydown",function(e){if(e.key==="Enter"&&!e.isComposing)sendText()});
+  $("pic").onclick=function(){$("file").click()};
+  $("file").onchange=function(){
+    var f=this.files[0];this.value="";if(!f)return;
+    var r=new FileReader();
+    if(f.type.indexOf("video")===0){
+      if(f.size>650000){toast("Video 650 KB dan kichik bo‘lsin. 🎥 tugmasi bilan qisqa video yozing yoki havola yuboring.");return}
+      r.onload=function(){if(r.result.length>900000){toast("Video katta");return}sendMsg({vid:r.result})};r.readAsDataURL(f);return;
+    }
+    r.onload=function(){
+      var im=new Image();
+      im.onload=function(){
+        var s=Math.min(1,900/Math.max(im.width,im.height)),c=document.createElement("canvas");
+        c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+        c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+        var u=c.toDataURL("image/jpeg",.6);
+        if(u.length>900000){toast("Rasm juda katta");return}
+        sendMsg({img:u});
+      };
+      im.onerror=function(){toast("Rasmni ochib bo‘lmadi")};
+      im.src=r.result;
+    };
+    r.readAsDataURL(f);
+  };
+  /* --- video xabar --- */
+  function recClose(){
+    if(!rec)return;clearInterval(rec.timer);
+    try{if(rec.mr&&rec.mr.state!=="inactive")rec.mr.stop()}catch(e){}
+    rec.st.getTracks().forEach(function(t){t.stop()});$("rpv").srcObject=null;$("rec").classList.remove("on");$("rst").classList.remove("recing");rec=null;
+  }
+  $("vrec").onclick=function(){
+    if(!cur||cur.bot||rec)return;
+    navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:320},height:{ideal:240}},audio:true}).then(function(st){
+      rec={st:st,chunks:[],mr:null,timer:null,t0:0,send:false};
+      $("rpv").srcObject=st;$("rt").textContent="0:00";$("rec").classList.add("on");
+    }).catch(function(){toast("Kamera va mikrofonga ruxsat bering")});
+  };
+  function stopRec(){if(!rec||!rec.mr||rec.mr.state==="inactive")return;rec.send=true;clearInterval(rec.timer);rec.mr.stop()}
+  $("rst").onclick=function(){
+    if(!rec)return;
+    if(rec.mr){stopRec();return}
+    var mt=["video/webm;codecs=vp8,opus","video/webm","video/mp4"].filter(function(x){return window.MediaRecorder&&MediaRecorder.isTypeSupported(x)})[0];
+    if(!mt){toast("Bu qurilma video yozishni qo‘llamaydi");return}
+    var r0=rec,mr=new MediaRecorder(r0.st,{mimeType:mt,videoBitsPerSecond:220000,audioBitsPerSecond:32000});
+    r0.mr=mr;r0.t0=Date.now();
+    mr.ondataavailable=function(e){if(e.data&&e.data.size)r0.chunks.push(e.data)};
+    mr.onstop=function(){
+      if(!r0.send)return;
+      var fr=new FileReader();
+      fr.onload=function(){var u=fr.result;recClose();if(u.length>900000)toast("Video katta chiqdi, qisqaroq yozing");else sendMsg({vid:u})};
+      fr.readAsDataURL(new Blob(r0.chunks,{type:mt.split(";")[0]}));
+    };
+    mr.start(500);$("rst").classList.add("recing");
+    r0.timer=setInterval(function(){var sec=Math.floor((Date.now()-r0.t0)/1000);$("rt").textContent="0:0"+Math.min(sec,6);if(sec>=6)stopRec()},250);
+  };
+  $("rcan").onclick=recClose;
+"""
+seg('  function openChat(uid,name){',"  /* --- qo'ng'iroqlar (WebRTC) --- */",segD)
+open('/mnt/user-data/outputs/index.html','w',encoding='utf-8').write(s)
+print("patched",len(s))
+PYEOF
+python3 /home/claude/patch3.py && node -e "
+const s=require('fs').readFileSync('/mnt/user-data/outputs/index.html','utf8');
+const js=s.split('<script>')[1].split('</script>')[0];
+new Function(js);console.log('syntax ok')" 2>&1 | head -8
